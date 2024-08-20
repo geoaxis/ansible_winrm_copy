@@ -1,0 +1,34 @@
+---
+- name: Copy all cfg files from remote Windows server to local machine
+  hosts: windows
+  gather_facts: no
+  tasks:
+    - name: Find all .cfg files in the remote directory
+      win_find:
+        paths: "{{ cfg_paths }}"
+        recurse: yes
+        patterns: "*.cfg"
+      register: found_files
+
+    - name: Convert Windows paths to Unix paths
+      set_fact:
+        unix_paths: "{{ found_files.files | map(attribute='path') | map('regex_replace', '^C:', '') | map('regex_replace', '\\\\', '/') | list }}"
+
+    - name: Ensure the directories exist locally
+      local_action:
+        module: file
+        path: "./{{ inventory_hostname }}{{ item | dirname }}"
+        state: directory
+      loop: "{{ unix_paths }}"
+      loop_control:
+        loop_var: item
+
+    - name: Copy files to the local machine in folder 
+      fetch:
+        src: "{{ item.path }}"
+        dest: "./data/{{ inventory_hostname }}{{ item.path | regex_replace('^C:', '') | regex_replace('\\\\', '/') }}"
+        flat: yes
+      loop: "{{ found_files.files }}"
+      loop_control:
+        loop_var: item
+
