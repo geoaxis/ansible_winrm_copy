@@ -17,7 +17,7 @@
     - name: Ensure the directories exist locally
       local_action:
         module: file
-        path: "./{{ inventory_hostname }}{{ item | dirname }}"
+        path: "./data/{{ inventory_hostname }}{{ item | dirname }}"
         state: directory
       loop: "{{ unix_paths }}"
       loop_control:
